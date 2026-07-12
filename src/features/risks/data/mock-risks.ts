@@ -1,0 +1,10 @@
+import type { RiskItem } from '../../../shared/types'
+import { ACME_PROJECT_ID } from '../../projects/data/mock-projects'
+
+export const mockRisks: RiskItem[] = [
+  { id: 'risk-restore-testing', projectId: ACME_PROJECT_ID, title: 'Backup restore testing not performed', description: 'There is no completed restore test for critical systems during 2026.', severity: 'high', relatedControlId: 'ctrl-restore-test', recommendation: 'Run and document a full restore test, including timing, outcome, and remediation.', status: 'open', createdAt: '2026-07-01T10:00:00Z' },
+  { id: 'risk-supplier-review', projectId: ACME_PROJECT_ID, title: 'Supplier security review incomplete', description: 'Critical suppliers do not have documented security review dates or outcomes.', severity: 'medium', relatedControlId: 'ctrl-suppliers', recommendation: 'Classify critical suppliers and complete documented security reviews.', status: 'in_progress', createdAt: '2026-07-02T09:30:00Z' },
+  { id: 'risk-ir-plan', projectId: ACME_PROJECT_ID, title: 'Incident response plan is outdated', description: 'The current plan contains outdated contacts and escalation paths.', severity: 'medium', relatedControlId: 'ctrl-ir-plan', recommendation: 'Update, approve, and communicate the incident response plan.', status: 'open', createdAt: '2026-07-03T11:00:00Z' },
+  { id: 'risk-mfa-coverage', projectId: ACME_PROJECT_ID, title: 'Incomplete MFA coverage', description: 'Two legacy privileged accounts are not enrolled in multi-factor authentication.', severity: 'high', relatedControlId: 'ctrl-mfa', recommendation: 'Enroll or disable the legacy accounts and retain an updated configuration export.', status: 'in_progress', createdAt: '2026-07-04T14:00:00Z' },
+  { id: 'risk-access-review', projectId: ACME_PROJECT_ID, title: 'No last-quarter access review', description: 'The last-quarter user and privileged access review cannot be evidenced.', severity: 'medium', relatedControlId: 'ctrl-access-reviews', recommendation: 'Complete the review, resolve exceptions, and retain reviewer approval.', status: 'open', createdAt: '2026-07-05T09:00:00Z' },
+]

@@ -1,0 +1,19 @@
+import type { Control } from '../../../shared/types'
+import { ACME_PROJECT_ID } from '../../projects/data/mock-projects'
+
+export const mockControls: Control[] = [
+  { id: 'ctrl-mfa', projectId: ACME_PROJECT_ID, name: 'MFA enabled for privileged users', description: 'Require multi-factor authentication for all privileged accounts.', category: 'access_control', status: 'in_progress', riskLevel: 'high', linkedEvidenceIds: ['ev-mfa-config'], owner: 'IT Operations', notes: 'Two legacy administrator accounts remain.' },
+  { id: 'ctrl-assets', projectId: ACME_PROJECT_ID, name: 'Asset inventory exists', description: 'Maintain an accurate inventory of company devices and systems.', category: 'asset_inventory', status: 'covered', riskLevel: 'medium', linkedEvidenceIds: ['ev-asset-register'], owner: 'IT Operations' },
+  { id: 'ctrl-backups-doc', projectId: ACME_PROJECT_ID, name: 'Backups are documented', description: 'Document backup scope, frequency, retention, and ownership.', category: 'backups', status: 'covered', riskLevel: 'medium', linkedEvidenceIds: ['ev-backup-policy'], owner: 'Infrastructure' },
+  { id: 'ctrl-restore-test', projectId: ACME_PROJECT_ID, name: 'Backup restore testing evidenced', description: 'Test restoration of critical systems on a defined schedule.', category: 'backups', status: 'gap', riskLevel: 'high', linkedEvidenceIds: ['ev-restore-test'], owner: 'Infrastructure', notes: 'No completed restore test this year.' },
+  { id: 'ctrl-access-reviews', projectId: ACME_PROJECT_ID, name: 'User access reviews performed', description: 'Review user and privileged access every quarter.', category: 'access_control', status: 'gap', riskLevel: 'high', linkedEvidenceIds: ['ev-access-review'], owner: 'Security' },
+  { id: 'ctrl-endpoint', projectId: ACME_PROJECT_ID, name: 'Endpoint protection deployed', description: 'Deploy managed endpoint protection to supported devices.', category: 'endpoint_security', status: 'covered', riskLevel: 'high', linkedEvidenceIds: ['ev-endpoint-dashboard'], owner: 'IT Operations' },
+  { id: 'ctrl-firewall', projectId: ACME_PROJECT_ID, name: 'Firewall/network configuration documented', description: 'Maintain approved perimeter firewall rules and configuration backups.', category: 'network_security', status: 'covered', riskLevel: 'high', linkedEvidenceIds: ['ev-firewall-export'], owner: 'Network Team' },
+  { id: 'ctrl-ir-plan', projectId: ACME_PROJECT_ID, name: 'Incident response plan exists', description: 'Maintain and periodically review the incident response plan.', category: 'incident_response', status: 'in_progress', riskLevel: 'high', linkedEvidenceIds: ['ev-ir-plan'], owner: 'Security' },
+  { id: 'ctrl-suppliers', projectId: ACME_PROJECT_ID, name: 'Supplier list exists', description: 'Maintain a list of suppliers with security relevance.', category: 'supplier_management', status: 'gap', riskLevel: 'medium', linkedEvidenceIds: ['ev-supplier-list'], owner: 'Procurement' },
+  { id: 'ctrl-policy', projectId: ACME_PROJECT_ID, name: 'Security policy exists', description: 'Approve, communicate, and review the security policy annually.', category: 'policies', status: 'covered', riskLevel: 'medium', linkedEvidenceIds: ['ev-security-policy'], owner: 'Management' },
+  { id: 'ctrl-logging', projectId: ACME_PROJECT_ID, name: 'Logging and monitoring evidence exists', description: 'Collect and monitor security-relevant events.', category: 'logging_monitoring', status: 'in_progress', riskLevel: 'medium', linkedEvidenceIds: ['ev-log-summary'], owner: 'Security' },
+  { id: 'ctrl-risk-register', projectId: ACME_PROJECT_ID, name: 'Risk register exists', description: 'Document, own, and review information security risks.', category: 'risk_management', status: 'covered', riskLevel: 'medium', linkedEvidenceIds: ['ev-risk-register'], owner: 'Management' },
+]
+
+export const controlNameById = new Map(mockControls.map((control) => [control.id, control.name]))
