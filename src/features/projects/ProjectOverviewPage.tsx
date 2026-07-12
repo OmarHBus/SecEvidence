@@ -1,56 +1,174 @@
-import { AlertTriangle, ClipboardCheck, FileClock, Files, Gauge, ShieldAlert } from 'lucide-react'
-import { Badge, Card, ProgressBar, StatCard } from '../../shared/components'
+import { AlertTriangle, CircleDot, ClipboardCheck, FileClock, Files, Gauge, ShieldAlert } from 'lucide-react'
+import { useAppData } from '../../app/state/useAppData'
+import { Badge, Card, EmptyState, ProgressBar, StatCard } from '../../shared/components'
+import type { EvidenceCategory } from '../../shared/types'
 import { categoryLabels, formatDate, statusLabels } from '../../shared/utils/formatters'
-import { mockEvidence } from '../evidence/data/mock-evidence'
-import { mockRisks } from '../risks/data/mock-risks'
-import { activeProject } from './data/mock-projects'
 
-const coverage = [
-  ['access_control', 58], ['backups', 50], ['asset_inventory', 82], ['endpoint_security', 91],
-  ['network_security', 76], ['incident_response', 44], ['supplier_management', 38], ['policies', 86],
-] as const
+const evidenceTone = {
+  accepted: 'green',
+  needs_review: 'amber',
+  missing: 'red',
+  outdated: 'red',
+} as const
+
+const riskTone = {
+  critical: 'red',
+  high: 'red',
+  medium: 'amber',
+  low: 'slate',
+} as const
 
 export function ProjectOverviewPage() {
-  const recent = mockEvidence.filter((item) => item.status !== 'missing').slice(0, 5)
-  const missing = mockEvidence.filter((item) => item.status === 'missing' || item.status === 'outdated')
-  const priorityRisks = mockRisks.filter((risk) => risk.severity === 'high').slice(0, 3)
+  const { activeProject, evidenceItems, controls, risks, stats } = useAppData()
+
+  if (!activeProject) {
+    return (
+      <Card className="p-6">
+        <EmptyState
+          icon={Gauge}
+          title="No active project"
+          description="Select or create a project to view readiness, evidence, control coverage, and gaps."
+        />
+      </Card>
+    )
+  }
+
+  const recentEvidence = [...evidenceItems]
+    .sort((left, right) => (
+      new Date(right.updatedAt || right.createdAt).getTime()
+      - new Date(left.updatedAt || left.createdAt).getTime()
+    ))
+    .slice(0, 5)
+  const missingControls = controls.filter((control) => (
+    control.status === 'gap'
+    || (control.status === 'covered' && control.linkedEvidenceIds.length === 0)
+  ))
+  const priorityGaps = risks
+    .filter((risk) => (
+      (risk.severity === 'high' || risk.severity === 'critical')
+      && (risk.status === 'open' || risk.status === 'in_progress')
+    ))
+    .sort((left, right) => {
+      if (left.severity === right.severity) {
+        return new Date(right.createdAt).getTime() - new Date(left.createdAt).getTime()
+      }
+      return left.severity === 'critical' ? -1 : 1
+    })
+
+  const coverageByCategory = Object.entries(
+    controls
+      .filter((control) => control.status !== 'not_applicable')
+      .reduce<Partial<Record<EvidenceCategory, { applicable: number; covered: number }>>>((result, control) => {
+        const current = result[control.category] ?? { applicable: 0, covered: 0 }
+        result[control.category] = {
+          applicable: current.applicable + 1,
+          covered: current.covered + (control.status === 'covered' ? 1 : 0),
+        }
+        return result
+      }, {}),
+  ) as [EvidenceCategory, { applicable: number; covered: number }][]
 
   return (
     <div className="space-y-6">
-      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-6">
-        <StatCard label="Readiness" value="64%" detail="Current evidence pack" icon={Gauge} tone="cyan" />
-        <StatCard label="Evidence" value="24" detail={`${mockEvidence.length} shown in library`} icon={Files} tone="green" />
-        <StatCard label="Controls" value="14 / 22" detail="Controls covered" icon={ClipboardCheck} tone="cyan" />
-        <StatCard label="Open gaps" value="6" detail="Remediation required" icon={AlertTriangle} tone="amber" />
-        <StatCard label="High risk" value="2" detail="Prioritize before export" icon={ShieldAlert} tone="red" />
-        <StatCard label="Pending review" value="3" detail="Evidence needs review" icon={FileClock} tone="amber" />
+      <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-5">
+        <StatCard label="Readiness" value={`${stats.readinessPercent}%`} detail="Covered / applicable controls" icon={Gauge} tone="cyan" />
+        <StatCard label="Total evidence" value={String(stats.totalEvidence)} detail="Items in this project" icon={Files} tone="green" />
+        <StatCard label="Controls" value={String(stats.controlsTotal)} detail={`${stats.controlsCovered} covered`} icon={ClipboardCheck} tone="cyan" />
+        <StatCard label="In progress" value={String(stats.controlsInProgress)} detail="Controls being implemented" icon={CircleDot} tone="amber" />
+        <StatCard label="Control gaps" value={String(stats.controlsWithGaps)} detail="Controls marked as gaps" icon={AlertTriangle} tone="amber" />
+        <StatCard label="Open gaps" value={String(stats.openGaps)} detail="Open or in-progress risks" icon={AlertTriangle} tone="amber" />
+        <StatCard label="High / critical" value={String(stats.highCriticalGaps)} detail="Priority open gaps" icon={ShieldAlert} tone="red" />
+        <StatCard label="Pending review" value={String(stats.pendingReviewEvidence)} detail="Evidence needs review" icon={FileClock} tone="amber" />
+        <StatCard label="Outdated" value={String(stats.outdatedEvidence)} detail="Evidence needs renewal" icon={FileClock} tone="red" />
+        <StatCard label="Applicable controls" value={String(stats.applicableControls)} detail={`${stats.controlsCovered} currently covered`} icon={ClipboardCheck} tone="slate" />
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[1.35fr_1fr]">
         <Card>
           <SectionTitle title="Coverage by category" detail={`${activeProject.clientName} · ${activeProject.packType}`} />
-          <div className="grid gap-x-8 gap-y-5 p-5 sm:grid-cols-2">
-            {coverage.map(([category, value]) => <div key={category}><div className="mb-2 flex justify-between text-xs"><span className="text-slate-300">{categoryLabels[category]}</span><span className="text-slate-400">{value}%</span></div><ProgressBar value={value} tone={value < 55 ? 'amber' : 'cyan'} /></div>)}
-          </div>
+          {coverageByCategory.length === 0 ? (
+            <div className="p-5"><EmptyState icon={ClipboardCheck} title="No applicable controls" description="Add applicable controls to calculate category coverage." /></div>
+          ) : (
+            <div className="grid gap-x-8 gap-y-5 p-5 sm:grid-cols-2">
+              {coverageByCategory.map(([category, counts]) => {
+                const value = Math.round((counts.covered / counts.applicable) * 100)
+                return (
+                  <div key={category}>
+                    <div className="mb-2 flex justify-between gap-3 text-xs">
+                      <span className="text-slate-300">{categoryLabels[category]}</span>
+                      <span className="text-slate-400">{counts.covered}/{counts.applicable} · {value}%</span>
+                    </div>
+                    <ProgressBar value={value} tone={value < 55 ? 'amber' : 'cyan'} />
+                  </div>
+                )
+              })}
+            </div>
+          )}
         </Card>
         <Card>
-          <SectionTitle title="Missing evidence" detail="Missing or outdated items" />
-          <div className="divide-y divide-slate-800">
-            {missing.map((item) => <div key={item.id} className="px-5 py-4"><div className="flex items-center justify-between gap-3"><p className="text-sm text-slate-200">{item.title}</p><Badge tone="red">{statusLabels[item.status]}</Badge></div><p className="mt-1 text-xs text-slate-500">{item.notes}</p></div>)}
-          </div>
+          <SectionTitle title="Missing evidence / gap controls" detail="Control coverage requiring attention" />
+          {controls.length === 0 ? (
+            <div className="p-5"><EmptyState icon={ClipboardCheck} title="No controls yet" description="Add controls to identify evidence and coverage gaps." /></div>
+          ) : missingControls.length === 0 ? (
+            <div className="p-5"><EmptyState icon={ClipboardCheck} title="No control gaps" description="All covered controls have linked evidence and no controls are marked as gaps." /></div>
+          ) : (
+            <div className="divide-y divide-slate-800">
+              {missingControls.map((control) => {
+                const hasNoEvidence = control.status === 'covered' && control.linkedEvidenceIds.length === 0
+                return (
+                  <div key={control.id} className="px-5 py-4">
+                    <div className="flex items-center justify-between gap-3">
+                      <p className="text-sm text-slate-200">{control.name}</p>
+                      <Badge tone={hasNoEvidence ? 'amber' : 'red'}>{hasNoEvidence ? 'No linked evidence' : 'Gap'}</Badge>
+                    </div>
+                    <p className="mt-1 text-xs text-slate-500">{categoryLabels[control.category]}{control.owner ? ` · ${control.owner}` : ''}</p>
+                  </div>
+                )
+              })}
+            </div>
+          )}
         </Card>
       </div>
 
       <div className="grid gap-4 xl:grid-cols-[1.35fr_1fr]">
         <Card>
           <SectionTitle title="Recent evidence" detail="Recently added workspace items" />
-          <div className="divide-y divide-slate-800">
-            {recent.map((item) => <div key={item.id} className="flex items-center gap-3 px-5 py-3.5"><div className="min-w-0 flex-1"><p className="truncate text-sm font-medium text-slate-200">{item.title}</p><p className="mt-1 text-xs text-slate-500">{categoryLabels[item.category]} · {formatDate(item.evidenceDate)}</p></div><Badge tone={item.status === 'accepted' ? 'green' : 'amber'}>{statusLabels[item.status]}</Badge></div>)}
-          </div>
+          {recentEvidence.length === 0 ? (
+            <div className="p-5"><EmptyState icon={Files} title="No evidence yet" description="Add evidence to populate the recent activity list." /></div>
+          ) : (
+            <div className="divide-y divide-slate-800">
+              {recentEvidence.map((item) => (
+                <div key={item.id} className="flex items-center gap-3 px-5 py-3.5">
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-slate-200">{item.title}</p>
+                    <p className="mt-1 text-xs text-slate-500">{categoryLabels[item.category]} · Updated {formatDate(item.updatedAt || item.createdAt)}</p>
+                  </div>
+                  <Badge tone={evidenceTone[item.status]}>{statusLabels[item.status]}</Badge>
+                </div>
+              ))}
+            </div>
+          )}
         </Card>
         <Card>
           <SectionTitle title="High priority gaps" detail="Highest-risk open work" />
-          <div className="space-y-3 p-4">{priorityRisks.map((risk) => <div key={risk.id} className="rounded-lg border border-slate-800 bg-slate-950/40 p-3"><div className="flex justify-between"><Badge tone="red">{risk.severity}</Badge><Badge tone="slate">{risk.status.replace('_', ' ')}</Badge></div><p className="mt-2 text-sm text-slate-200">{risk.title}</p><p className="mt-1 text-xs leading-5 text-slate-500">{risk.recommendation}</p></div>)}</div>
+          {risks.length === 0 ? (
+            <div className="p-5"><EmptyState icon={ShieldAlert} title="No risks or gaps yet" description="Add risks or gaps to track remediation priorities." /></div>
+          ) : priorityGaps.length === 0 ? (
+            <div className="p-5"><EmptyState icon={ShieldAlert} title="No high-priority open gaps" description="There are no open or in-progress high or critical risks." /></div>
+          ) : (
+            <div className="space-y-3 p-4">
+              {priorityGaps.map((risk) => (
+                <div key={risk.id} className="rounded-lg border border-slate-800 bg-slate-950/40 p-3">
+                  <div className="flex justify-between gap-3">
+                    <Badge tone={riskTone[risk.severity]}>{risk.severity}</Badge>
+                    <Badge tone={risk.status === 'open' ? 'red' : 'amber'}>{risk.status.replace('_', ' ')}</Badge>
+                  </div>
+                  <p className="mt-2 text-sm text-slate-200">{risk.title}</p>
+                  <p className="mt-1 text-xs leading-5 text-slate-500">{risk.recommendation ?? risk.description}</p>
+                </div>
+              ))}
+            </div>
+          )}
         </Card>
       </div>
     </div>

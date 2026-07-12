@@ -5,6 +5,7 @@ export interface Project {
   packType: string
   description?: string
   deadline?: string
+  localPackPath?: string
   createdAt: string
   updatedAt: string
   readinessPercent: number

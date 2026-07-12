@@ -20,8 +20,10 @@ npm run build
 ## Current scope
 
 - React, TypeScript, Vite, and Tailwind CSS.
-- Projects, overview, evidence, controls, risks, report builder, export, and settings screens.
-- Realistic mock data.
+- Local project, evidence, control, risk, and settings persistence through repository-backed `localStorage`.
+- Functional CRUD forms, evidence/control linking, dynamic readiness metrics, and report previews.
+- Real CSV exports for evidence, controls, and risks.
+- Realistic seed data for the initial workspace.
 - Typed boundaries for a future local SQLite and file-storage implementation.
 - No auth, billing, analytics, telemetry, Supabase, or other cloud dependency.
 

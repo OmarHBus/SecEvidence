@@ -1,17 +1,18 @@
-export interface StoredEvidenceFile {
-  evidenceId: string
-  name: string
-  localPath: string
-  fileType: string
-  fileSize: number
-  checksumSha256?: string
-}
-
-export interface FileStore {
-  select(evidenceId: string): Promise<StoredEvidenceFile | null>
-  remove(evidenceId: string): Promise<void>
-  reveal(evidenceId: string): Promise<void>
-}
-
-// Desktop file-system adapter boundary.
-export const fileStore: FileStore | null = null
+export type {
+  ProjectFolderInfo,
+  SelectedEvidenceFile,
+} from './file-types'
+export {
+  copyEvidenceFileToPack,
+  openEvidenceFolder,
+  readEvidenceFileBytes,
+  revealEvidenceFile,
+  selectEvidenceFile,
+} from './evidence-file-store'
+export {
+  ensureProjectPackFolder,
+  openPath,
+  revealPath,
+  selectFolder,
+} from './local-project-folder'
+export { isDesktopApp } from './tauri-env'
