@@ -10,6 +10,7 @@ import {
 import { buildMarkdownReport } from './markdown-report'
 import { EVIDENCE_CATEGORY_FOLDERS } from '../files/file-types'
 import { readEvidenceFileBytes } from '../files/evidence-file-store'
+import { saveExportBlob } from './download-export'
 
 export interface ZipExportInput {
   project: Project
@@ -83,21 +84,13 @@ export async function buildEvidencePackZip({
   }
 }
 
-export function downloadBlob(blob: Blob, fileName: string): void {
-  const url = URL.createObjectURL(blob)
-  const anchor = document.createElement('a')
-
-  anchor.href = url
-  anchor.download = fileName
-  anchor.style.display = 'none'
-  document.body.append(anchor)
-  anchor.click()
-  anchor.remove()
-  URL.revokeObjectURL(url)
+export interface ZipExportDelivery {
+  result: ZipExportResult
+  delivery: 'saved' | 'downloaded' | 'cancelled'
 }
 
-export async function exportEvidencePackZip(input: ZipExportInput): Promise<ZipExportResult> {
+export async function exportEvidencePackZip(input: ZipExportInput): Promise<ZipExportDelivery> {
   const result = await buildEvidencePackZip(input)
-  downloadBlob(result.blob, result.fileName)
-  return result
+  const delivery = await saveExportBlob(result.blob, result.fileName)
+  return { result, delivery }
 }

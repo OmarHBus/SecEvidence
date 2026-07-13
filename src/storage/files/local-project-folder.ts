@@ -1,3 +1,4 @@
+import { joinPath, normalizeRootPath } from '../../shared/utils/paths'
 import { buildProjectPackFolderName } from '../../shared/utils/file-names'
 import { PACK_SUBFOLDERS, type ProjectFolderInfo } from './file-types'
 import { isDesktopApp } from './tauri-env'
@@ -43,10 +44,11 @@ export async function ensureProjectPackFolder(
   rootFolder: string,
   clientName: string,
 ): Promise<ProjectFolderInfo> {
-  const packFolderPath = `${normalizePath(rootFolder)}/${buildProjectPackFolderName(clientName)}`
+  const normalizedRoot = normalizeRootPath(rootFolder)
+  const packFolderPath = joinPath(normalizedRoot, buildProjectPackFolderName(clientName))
 
   if (!(await isDesktopApp())) {
-    return { rootFolder, packFolderPath, created: false }
+    return { rootFolder: normalizedRoot, packFolderPath, created: false }
   }
 
   const { mkdir, exists } = await import('@tauri-apps/plugin-fs')
@@ -58,16 +60,12 @@ export async function ensureProjectPackFolder(
   }
 
   for (const subfolder of PACK_SUBFOLDERS) {
-    const folderPath = `${packFolderPath}/${subfolder}`
+    const folderPath = joinPath(packFolderPath, ...subfolder.split('/'))
     if (!(await exists(folderPath))) {
       await mkdir(folderPath, { recursive: true })
       created = true
     }
   }
 
-  return { rootFolder, packFolderPath, created }
-}
-
-function normalizePath(path: string): string {
-  return path.replace(/[\\/]+$/, '')
+  return { rootFolder: normalizedRoot, packFolderPath, created }
 }

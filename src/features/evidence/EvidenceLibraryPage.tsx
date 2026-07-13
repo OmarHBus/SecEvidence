@@ -103,6 +103,11 @@ export function EvidenceLibraryPage() {
       }
     }
 
+    if (selectedFile?.sourcePath && !settings.localEvidencePackRootFolder.trim()) {
+      window.alert('Set a local evidence pack folder in Settings before attaching real files.')
+      return
+    }
+
     let fileName = optionalText(form.fileName)
     let fileType = optionalText(form.fileType)
     let fileSize = form.fileSize === '' ? undefined : Number(form.fileSize)
@@ -120,6 +125,9 @@ export function EvidenceLibraryPage() {
         fileName = selectedFile.fileName
         fileType = selectedFile.fileType
         fileSize = selectedFile.fileSize
+      } else {
+        window.alert('Could not copy the selected file into the evidence pack folder. Check the folder path and try again.')
+        return
       }
     } else if (selectedFile && !selectedFile.sourcePath) {
       fileName = selectedFile.fileName

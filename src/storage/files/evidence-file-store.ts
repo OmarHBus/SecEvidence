@@ -1,5 +1,6 @@
-import type { EvidenceCategory } from '../../shared/types'
+import { joinPath } from '../../shared/utils/paths'
 import { sanitizeFileNamePart } from '../../shared/utils/file-names'
+import type { EvidenceCategory } from '../../shared/types'
 import { EVIDENCE_CATEGORY_FOLDERS, type SelectedEvidenceFile } from './file-types'
 import { isDesktopApp } from './tauri-env'
 
@@ -71,26 +72,30 @@ export async function copyEvidenceFileToPack(
 ): Promise<string | null> {
   if (!(await isDesktopApp())) return null
 
-  const { copyFile, exists, mkdir } = await import('@tauri-apps/plugin-fs')
-  const categoryFolder = EVIDENCE_CATEGORY_FOLDERS[category]
-  const evidenceDir = `${packFolderPath}/evidence/${categoryFolder}`
+  try {
+    const { copyFile, exists, mkdir } = await import('@tauri-apps/plugin-fs')
+    const categoryFolder = EVIDENCE_CATEGORY_FOLDERS[category]
+    const evidenceDir = joinPath(packFolderPath, 'evidence', categoryFolder)
 
-  if (!(await exists(evidenceDir))) {
-    await mkdir(evidenceDir, { recursive: true })
+    if (!(await exists(evidenceDir))) {
+      await mkdir(evidenceDir, { recursive: true })
+    }
+
+    const safeName = sanitizeFileNamePart(fileName) || 'evidence-file'
+    let destinationPath = joinPath(evidenceDir, safeName)
+
+    if (await exists(destinationPath)) {
+      const dotIndex = safeName.lastIndexOf('.')
+      const stem = dotIndex > 0 ? safeName.slice(0, dotIndex) : safeName
+      const extension = dotIndex > 0 ? safeName.slice(dotIndex) : ''
+      destinationPath = joinPath(evidenceDir, `${stem}-${Date.now()}${extension}`)
+    }
+
+    await copyFile(sourcePath, destinationPath)
+    return destinationPath
+  } catch {
+    return null
   }
-
-  const safeName = sanitizeFileNamePart(fileName) || 'evidence-file'
-  let destinationPath = `${evidenceDir}/${safeName}`
-
-  if (await exists(destinationPath)) {
-    const dotIndex = safeName.lastIndexOf('.')
-    const stem = dotIndex > 0 ? safeName.slice(0, dotIndex) : safeName
-    const extension = dotIndex > 0 ? safeName.slice(dotIndex) : ''
-    destinationPath = `${evidenceDir}/${stem}-${Date.now()}${extension}`
-  }
-
-  await copyFile(sourcePath, destinationPath)
-  return destinationPath
 }
 
 export async function readEvidenceFileBytes(localPath: string): Promise<Uint8Array | null> {

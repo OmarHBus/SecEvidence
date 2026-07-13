@@ -104,7 +104,7 @@ export function ExportPage() {
 
     setExportingZip(true)
     try {
-      const result = await exportEvidencePackZip({
+      const { result, delivery } = await exportEvidencePackZip({
         project: activeProject,
         evidenceItems,
         controls,
@@ -112,10 +112,17 @@ export function ExportPage() {
         stats,
         settings,
       })
+
+      if (delivery === 'cancelled') {
+        setFeedback('ZIP export cancelled.')
+        return
+      }
+
       const skippedNote = result.skippedEvidenceFiles > 0
-        ? ` (${result.skippedEvidenceFiles} evidence file(s) skipped — desktop copy required)`
+        ? ` (${result.skippedEvidenceFiles} evidence file(s) skipped)`
         : ''
-      setFeedback(`Downloaded ${result.fileName} with ${result.includedEvidenceFiles} evidence file(s)${skippedNote}`)
+      const action = delivery === 'saved' ? 'Saved' : 'Downloaded'
+      setFeedback(`${action} ${result.fileName} with ${result.includedEvidenceFiles} evidence file(s)${skippedNote}`)
     } catch {
       setFeedback('ZIP export failed. Try again or export CSVs individually.')
     } finally {
