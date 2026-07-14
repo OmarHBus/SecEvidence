@@ -29,5 +29,33 @@ export function Topbar() {
     .map((part) => part[0]?.toUpperCase())
     .join('') || 'SE'
 
-  return <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-slate-800 bg-slate-950/90 px-4 backdrop-blur md:px-6"><div className="flex min-w-0 items-center gap-3"><button type="button" className="grid size-9 place-items-center rounded-lg text-slate-400 hover:bg-slate-800 lg:hidden" aria-label="Navigation menu"><Menu size={20} /></button><div className="min-w-0"><h1 className="truncate text-sm font-semibold text-slate-100 md:text-base">{current.title}</h1><p className="hidden truncate text-xs text-slate-500 sm:block">{projectSubtitle}</p></div></div><div className="flex items-center gap-3"><div className="hidden items-center gap-2 rounded-lg border border-slate-800 bg-slate-900 px-3 py-2 text-xs text-slate-500 md:flex"><Search size={14} />Local workspace</div><div className="grid size-8 place-items-center rounded-full bg-slate-700 text-xs font-semibold text-slate-200" title={settings.consultantCompanyName}>{initials}</div></div></header>
+  return (
+    <header className="sticky top-0 z-20 flex h-16 items-center justify-between border-b border-white/[0.06] bg-[#0f1218]/95 px-4 backdrop-blur-md md:px-6">
+      <div className="flex min-w-0 items-center gap-3">
+        <button
+          type="button"
+          className="grid size-9 place-items-center rounded-lg text-zinc-500 transition hover:bg-white/[0.04] hover:text-zinc-200 lg:hidden"
+          aria-label="Navigation menu"
+        >
+          <Menu size={20} strokeWidth={2} />
+        </button>
+        <div className="min-w-0">
+          <h1 className="truncate text-sm font-semibold text-zinc-100 md:text-base">{current.title}</h1>
+          <p className="hidden truncate text-xs text-zinc-500 sm:block">{projectSubtitle}</p>
+        </div>
+      </div>
+      <div className="flex items-center gap-3">
+        <div className="hidden items-center gap-2 rounded-lg border border-white/[0.07] bg-zinc-900/40 px-3 py-2 text-xs text-zinc-500 md:flex">
+          <Search size={14} strokeWidth={2} />
+          Local workspace
+        </div>
+        <div
+          className="grid size-8 place-items-center rounded-full border border-white/[0.08] bg-zinc-800/80 text-xs font-semibold text-zinc-200"
+          title={settings.consultantCompanyName}
+        >
+          {initials}
+        </div>
+      </div>
+    </header>
+  )
 }

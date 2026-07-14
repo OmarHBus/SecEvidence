@@ -1,7 +1,21 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react'
-import { AlertOctagon, AlertTriangle, Pencil, Plus, Search, ShieldAlert, ShieldCheck, Trash2, X } from 'lucide-react'
+import { AlertOctagon, AlertTriangle, Pencil, Plus, Search, ShieldAlert, ShieldCheck, Trash2 } from 'lucide-react'
 import { useAppData } from '../../app/state/useAppData'
-import { Badge, Button, Card, DataTable, EmptyState, StatCard, type Column } from '../../shared/components'
+import {
+  Badge,
+  Button,
+  Card,
+  DataTable,
+  Dialog,
+  DialogBody,
+  EmptyState,
+  ActionGroup,
+  IconButton,
+  FormField,
+  inputClass,
+  StatCard,
+  type Column,
+} from '../../shared/components'
 import type { Control, RiskItem, RiskSeverity, RiskStatus } from '../../shared/types'
 
 const severityTone = { critical: 'red', high: 'red', medium: 'amber', low: 'slate' } as const
@@ -59,30 +73,61 @@ export function RisksPage() {
   )
 
   const columns: Column<RiskItem>[] = [
-    { key: 'gap', header: 'Gap', render: (risk) => <div className="min-w-56 max-w-md"><p className="font-medium text-slate-200">{risk.title}</p><p className="mt-1 text-xs leading-5 text-slate-500">{risk.description}</p></div> },
-    { key: 'severity', header: 'Severity', render: (risk) => <Badge tone={severityTone[risk.severity]}>{risk.severity}</Badge> },
-    { key: 'control', header: 'Related control', render: (risk) => <span className="block min-w-40 text-slate-300">{risk.relatedControlId ? controlNameById.get(risk.relatedControlId) ?? 'Unknown control' : '—'}</span> },
-    { key: 'recommendation', header: 'Recommendation', render: (risk) => <span className="block min-w-56 max-w-md text-xs leading-5 text-slate-500">{risk.recommendation ?? '—'}</span> },
-    { key: 'status', header: 'Status', render: (risk) => <Badge tone={statusTone[risk.status]}>{risk.status.replace('_', ' ')}</Badge> },
+    {
+      key: 'gap',
+      header: 'Gap / risk',
+      width: '38%',
+      render: (risk) => (
+        <div className="min-w-0">
+          <p className="truncate font-medium text-zinc-100" title={risk.title}>{risk.title}</p>
+          {risk.description ? (
+            <p className="mt-0.5 line-clamp-2 text-xs leading-5 text-zinc-500" title={risk.description}>{risk.description}</p>
+          ) : null}
+          {risk.recommendation ? (
+            <p className="mt-1 truncate text-[11px] text-zinc-600" title={risk.recommendation}>{risk.recommendation}</p>
+          ) : null}
+        </div>
+      ),
+    },
+    {
+      key: 'severity',
+      header: 'Severity',
+      width: '12%',
+      render: (risk) => <Badge tone={severityTone[risk.severity]}>{risk.severity}</Badge>,
+    },
+    {
+      key: 'control',
+      header: 'Control',
+      width: '18%',
+      render: (risk) => {
+        const name = risk.relatedControlId ? controlNameById.get(risk.relatedControlId) ?? 'Unknown control' : '—'
+        return <span className="block truncate text-xs text-zinc-400" title={name}>{name}</span>
+      },
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      width: '12%',
+      render: (risk) => <Badge tone={statusTone[risk.status]}>{risk.status.replace('_', ' ')}</Badge>,
+    },
     {
       key: 'actions',
       header: 'Actions',
+      width: '96px',
+      align: 'right',
+      hideHeader: true,
       render: (risk) => (
-        <div className="flex gap-1">
-          <Button variant="ghost" className="size-8 px-0" onClick={() => setDialogRisk(risk)} aria-label={`Edit ${risk.title}`}>
-            <Pencil size={15} aria-hidden="true" />
-          </Button>
-          <Button
-            variant="ghost"
-            className="size-8 px-0 text-rose-300 hover:bg-rose-400/10 hover:text-rose-200"
+        <ActionGroup>
+          <IconButton icon={Pencil} label={`Edit ${risk.title}`} variant="edit" onClick={() => setDialogRisk(risk)} />
+          <IconButton
+            icon={Trash2}
+            label={`Delete ${risk.title}`}
+            variant="danger"
             onClick={() => {
               if (window.confirm(`Delete risk or gap "${risk.title}"?`)) deleteRisk(risk.id)
             }}
-            aria-label={`Delete ${risk.title}`}
-          >
-            <Trash2 size={15} aria-hidden="true" />
-          </Button>
-        </div>
+          />
+        </ActionGroup>
       ),
     },
   ]
@@ -114,9 +159,9 @@ export function RisksPage() {
       </div>
 
       <Card className="overflow-hidden">
-        <div className="border-b border-slate-800 px-4 py-3">
-          <h2 className="text-sm font-semibold text-slate-200">Risks / Gaps</h2>
-          <p className="mt-1 text-xs text-slate-500">{filteredRisks.length} of {risks.length} items shown</p>
+        <div className="border-b border-white/[0.06] px-4 py-3">
+          <h2 className="text-sm font-semibold text-zinc-200">Risks / Gaps</h2>
+          <p className="mt-1 text-xs text-zinc-500">{filteredRisks.length} of {risks.length} items shown</p>
         </div>
         {!activeProjectId ? (
           <div className="p-5"><EmptyState icon={ShieldAlert} title="No active project" description="Select or create a project before managing risks and gaps." /></div>
@@ -166,7 +211,7 @@ function FilterSelect({
   children: ReactNode
 }) {
   return (
-    <label className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-slate-600">
+    <label className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-zinc-600">
       {label}
       <select className={`${inputClass} h-9 w-auto min-w-40 py-0 capitalize tracking-normal`} value={value} onChange={(event) => onChange(event.target.value)}>
         {children}
@@ -199,12 +244,7 @@ function RiskDialog({
 
   useEffect(() => {
     titleRef.current?.focus()
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose()
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [onClose])
+  }, [])
 
   const updateField = <Key extends keyof RiskForm>(field: Key, value: RiskForm[Key]) => {
     setForm((current) => ({ ...current, [field]: value }))
@@ -223,91 +263,55 @@ function RiskDialog({
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 grid place-items-center bg-slate-950/80 p-4 backdrop-blur-sm"
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose()
-      }}
+    <Dialog
+      titleId="risk-dialog-title"
+      title={risk ? 'Edit risk / gap' : 'Add risk / gap'}
+      description="Document the issue, its impact, and recommended remediation."
+      onClose={onClose}
+      maxWidth="md"
+      onSubmit={handleSubmit}
+      footer={(
+        <>
+          <Button variant="secondary" onClick={onClose}>Cancel</Button>
+          <Button type="submit">{risk ? 'Save changes' : 'Add risk / gap'}</Button>
+        </>
+      )}
     >
-      <section role="dialog" aria-modal="true" aria-labelledby="risk-dialog-title" className="max-h-[92vh] w-full max-w-2xl overflow-hidden rounded-xl border border-slate-700 bg-slate-900 shadow-2xl">
-        <div className="flex items-start justify-between border-b border-slate-800 px-5 py-4">
-          <div>
-            <h2 id="risk-dialog-title" className="font-semibold text-slate-100">{risk ? 'Edit risk / gap' : 'Add risk / gap'}</h2>
-            <p className="mt-1 text-xs text-slate-500">Document the issue, its impact, and recommended remediation.</p>
-          </div>
-          <Button variant="ghost" className="size-9 px-0" onClick={onClose} aria-label="Close risk dialog"><X size={18} aria-hidden="true" /></Button>
+      <DialogBody>
+        <div className="sm:col-span-2">
+          <FormField id="risk-title" label="Title" required error={errors.title}>
+            <input ref={titleRef} id="risk-title" className={inputClass} value={form.title} onChange={(event) => updateField('title', event.target.value)} aria-invalid={Boolean(errors.title)} aria-describedby={errors.title ? 'risk-title-error' : undefined} />
+          </FormField>
         </div>
-
-        <form onSubmit={handleSubmit} noValidate>
-          <div className="max-h-[calc(92vh-132px)] overflow-y-auto">
-            <div className="grid gap-5 p-5 sm:grid-cols-2">
-              <div className="sm:col-span-2">
-                <FormField id="risk-title" label="Title" required error={errors.title}>
-                  <input ref={titleRef} id="risk-title" className={inputClass} value={form.title} onChange={(event) => updateField('title', event.target.value)} aria-invalid={Boolean(errors.title)} aria-describedby={errors.title ? 'risk-title-error' : undefined} />
-                </FormField>
-              </div>
-              <div className="sm:col-span-2">
-                <FormField id="risk-description" label="Description" required error={errors.description}>
-                  <textarea id="risk-description" className={`${inputClass} min-h-24 resize-y py-2.5`} value={form.description} onChange={(event) => updateField('description', event.target.value)} aria-invalid={Boolean(errors.description)} aria-describedby={errors.description ? 'risk-description-error' : undefined} />
-                </FormField>
-              </div>
-              <FormField id="risk-severity" label="Severity">
-                <select id="risk-severity" className={`${inputClass} capitalize`} value={form.severity} onChange={(event) => updateField('severity', event.target.value as RiskSeverity)}>
-                  {severities.map((severity) => <option key={severity} value={severity}>{severity}</option>)}
-                </select>
-              </FormField>
-              <FormField id="risk-status" label="Status">
-                <select id="risk-status" className={`${inputClass} capitalize`} value={form.status} onChange={(event) => updateField('status', event.target.value as RiskStatus)}>
-                  {statuses.map((status) => <option key={status} value={status}>{status.replace('_', ' ')}</option>)}
-                </select>
-              </FormField>
-              <div className="sm:col-span-2">
-                <FormField id="risk-control" label="Related control (optional)">
-                  <select id="risk-control" className={inputClass} value={form.relatedControlId} onChange={(event) => updateField('relatedControlId', event.target.value)}>
-                    <option value="">No related control</option>
-                    {controls.map((control) => <option key={control.id} value={control.id}>{control.name}</option>)}
-                  </select>
-                </FormField>
-              </div>
-              <div className="sm:col-span-2">
-                <FormField id="risk-recommendation" label="Recommendation">
-                  <textarea id="risk-recommendation" className={`${inputClass} min-h-24 resize-y py-2.5`} value={form.recommendation} onChange={(event) => updateField('recommendation', event.target.value)} />
-                </FormField>
-              </div>
-            </div>
-          </div>
-          <div className="flex justify-end gap-3 border-t border-slate-800 px-5 py-4">
-            <Button variant="secondary" onClick={onClose}>Cancel</Button>
-            <Button type="submit">{risk ? 'Save changes' : 'Add risk / gap'}</Button>
-          </div>
-        </form>
-      </section>
-    </div>
+        <div className="sm:col-span-2">
+          <FormField id="risk-description" label="Description" required error={errors.description}>
+            <textarea id="risk-description" className={`${inputClass} min-h-24 resize-y py-2.5`} value={form.description} onChange={(event) => updateField('description', event.target.value)} aria-invalid={Boolean(errors.description)} aria-describedby={errors.description ? 'risk-description-error' : undefined} />
+          </FormField>
+        </div>
+        <FormField id="risk-severity" label="Severity">
+          <select id="risk-severity" className={`${inputClass} capitalize`} value={form.severity} onChange={(event) => updateField('severity', event.target.value as RiskSeverity)}>
+            {severities.map((severity) => <option key={severity} value={severity}>{severity}</option>)}
+          </select>
+        </FormField>
+        <FormField id="risk-status" label="Status">
+          <select id="risk-status" className={`${inputClass} capitalize`} value={form.status} onChange={(event) => updateField('status', event.target.value as RiskStatus)}>
+            {statuses.map((status) => <option key={status} value={status}>{status.replace('_', ' ')}</option>)}
+          </select>
+        </FormField>
+        <div className="sm:col-span-2">
+          <FormField id="risk-control" label="Related control (optional)">
+            <select id="risk-control" className={inputClass} value={form.relatedControlId} onChange={(event) => updateField('relatedControlId', event.target.value)}>
+              <option value="">No related control</option>
+              {controls.map((control) => <option key={control.id} value={control.id}>{control.name}</option>)}
+            </select>
+          </FormField>
+        </div>
+        <div className="sm:col-span-2">
+          <FormField id="risk-recommendation" label="Recommendation">
+            <textarea id="risk-recommendation" className={`${inputClass} min-h-24 resize-y py-2.5`} value={form.recommendation} onChange={(event) => updateField('recommendation', event.target.value)} />
+          </FormField>
+        </div>
+      </DialogBody>
+    </Dialog>
   )
 }
-
-function FormField({
-  id,
-  label,
-  required = false,
-  error,
-  children,
-}: {
-  id: string
-  label: string
-  required?: boolean
-  error?: string
-  children: ReactNode
-}) {
-  return (
-    <div>
-      <label htmlFor={id} className="mb-2 block text-xs font-medium text-slate-400">
-        {label}{required ? <span className="text-rose-400" aria-hidden="true"> *</span> : null}
-      </label>
-      {children}
-      {error ? <p id={`${id}-error`} className="mt-1.5 text-xs text-rose-300">{error}</p> : null}
-    </div>
-  )
-}
-
-const inputClass = 'h-10 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 text-sm text-slate-200 outline-none transition placeholder:text-slate-600 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/15'

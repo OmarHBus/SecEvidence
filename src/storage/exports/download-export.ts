@@ -1,5 +1,10 @@
 import { isDesktopApp } from '../files/tauri-env'
 
+interface ExportFileFilter {
+  name: string
+  extensions: string[]
+}
+
 export function downloadBlob(blob: Blob, fileName: string): void {
   const url = URL.createObjectURL(blob)
   const anchor = document.createElement('a')
@@ -13,13 +18,17 @@ export function downloadBlob(blob: Blob, fileName: string): void {
   URL.revokeObjectURL(url)
 }
 
-export async function saveExportBlob(blob: Blob, fileName: string): Promise<'saved' | 'downloaded' | 'cancelled'> {
+export async function saveExportBlob(
+  blob: Blob,
+  fileName: string,
+  filter: ExportFileFilter = { name: 'ZIP archive', extensions: ['zip'] },
+): Promise<'saved' | 'downloaded' | 'cancelled'> {
   if (await isDesktopApp()) {
     const { save } = await import('@tauri-apps/plugin-dialog')
     const { writeFile } = await import('@tauri-apps/plugin-fs')
     const destination = await save({
       defaultPath: fileName,
-      filters: [{ name: 'ZIP archive', extensions: ['zip'] }],
+      filters: [filter],
     })
 
     if (!destination) return 'cancelled'

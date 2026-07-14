@@ -1,7 +1,7 @@
 import { useEffect, useState, type FormEvent, type ReactNode } from 'react'
 import { FolderOpen, FolderTree, Info, Save } from 'lucide-react'
 import { useAppData } from '../../app/state/useAppData'
-import { Button, Card } from '../../shared/components'
+import { Button, Card, inputClass } from '../../shared/components'
 import type { AppSettings } from '../../shared/types'
 import { ensureProjectPackFolder, openPath, selectFolder } from '../../storage/files/local-project-folder'
 import { isDesktopApp } from '../../storage/files/tauri-env'
@@ -94,9 +94,9 @@ export function SettingsPage() {
     <div className="max-w-4xl space-y-5">
       <form onSubmit={handleSubmit}>
         <Card>
-          <div className="border-b border-slate-800 px-5 py-4">
-            <h2 className="font-semibold text-slate-100">Workspace settings</h2>
-            <p className="mt-1 text-xs text-slate-500">Defaults used when SecEvidence prepares local exports and reports.</p>
+          <div className="border-b border-zinc-800 px-5 py-4">
+            <h2 className="font-semibold text-zinc-100">Workspace settings</h2>
+            <p className="mt-1 text-xs text-zinc-500">Defaults used when SecEvidence prepares local exports and reports.</p>
           </div>
           <div className="grid gap-5 p-5 sm:grid-cols-2">
             <Field label="Consultant / company name" htmlFor="consultant-company-name">
@@ -125,20 +125,20 @@ export function SettingsPage() {
                 />
               </Field>
             </div>
-            <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-slate-800 bg-slate-950/50 p-4 sm:col-span-2">
+            <label className="flex cursor-pointer items-start gap-3 rounded-lg border border-zinc-800 bg-zinc-950/50 p-4 sm:col-span-2">
               <input
                 type="checkbox"
-                className="mt-0.5 size-4 rounded border-slate-600 bg-slate-900 accent-cyan-400"
+                className="mt-0.5 size-4 rounded border-zinc-600 bg-zinc-900 accent-teal-400"
                 checked={form.localFirstReminderEnabled}
                 onChange={(event) => updateField('localFirstReminderEnabled', event.target.checked)}
               />
               <span>
-                <span className="block text-sm font-medium text-slate-200">Show local-first reminder</span>
-                <span className="mt-1 block text-xs leading-5 text-slate-500">Keep the local storage notice visible in the workspace.</span>
+                <span className="block text-sm font-medium text-zinc-200">Show local-first reminder</span>
+                <span className="mt-1 block text-xs leading-5 text-zinc-500">Keep the local storage notice visible in the workspace.</span>
               </span>
             </label>
           </div>
-          <div className="flex items-center justify-end gap-4 border-t border-slate-800 px-5 py-4">
+          <div className="flex items-center justify-end gap-4 border-t border-zinc-800 px-5 py-4">
             <p className="text-xs text-emerald-300" role="status" aria-live="polite">
               {saved ? 'Settings saved locally.' : ''}
             </p>
@@ -148,12 +148,12 @@ export function SettingsPage() {
       </form>
 
       <Card>
-        <div className="border-b border-slate-800 px-5 py-4">
+        <div className="border-b border-zinc-800 px-5 py-4">
           <div className="flex items-center gap-2">
-            <FolderTree size={17} className="text-cyan-300" />
-            <h2 className="font-semibold text-slate-100">Local evidence pack folder</h2>
+            <FolderTree size={17} className="text-teal-300" />
+            <h2 className="font-semibold text-zinc-100">Local evidence pack folder</h2>
           </div>
-          <p className="mt-1 text-xs text-slate-500">Choose where SecEvidence stores organized evidence files for each project pack.</p>
+          <p className="mt-1 text-xs text-zinc-500">Choose where SecEvidence stores organized evidence files for each project pack.</p>
         </div>
         <div className="space-y-4 p-5">
           <Field label="Local evidence pack root folder" htmlFor="local-pack-root-folder">
@@ -177,7 +177,7 @@ export function SettingsPage() {
             </Button>
           </div>
           {activeProject?.localPackPath ? (
-            <p className="text-xs text-slate-500">Active project pack: <span className="font-mono text-slate-400">{activeProject.localPackPath}</span></p>
+            <p className="text-xs text-zinc-500">Active project pack: <span className="font-mono text-zinc-400">{activeProject.localPackPath}</span></p>
           ) : null}
 
           <Field label="Export folder (optional)" htmlFor="export-folder">
@@ -205,12 +205,12 @@ export function SettingsPage() {
         </div>
       </Card>
 
-      <div className="flex gap-3 rounded-xl border border-cyan-400/20 bg-cyan-400/5 p-4">
-        <Info className="mt-0.5 shrink-0 text-cyan-300" size={18} />
+      <div className="flex gap-3 rounded-xl border border-teal-400/20 bg-teal-400/5 p-4">
+        <Info className="mt-0.5 shrink-0 text-teal-300" size={18} />
         <div>
-          <p className="text-sm font-semibold text-cyan-200">Local-first</p>
-          <p className="mt-1 text-sm leading-6 text-slate-400">Your evidence files stay on this device unless you explicitly export or move them.</p>
-          <p className="mt-2 text-xs leading-5 text-slate-500">Project metadata and settings remain in localStorage for now. SQLite migration is planned for a later phase.</p>
+          <p className="text-sm font-semibold text-teal-200">Local-first</p>
+          <p className="mt-1 text-sm leading-6 text-zinc-400">Your evidence files stay on this device unless you explicitly export or move them.</p>
+          <p className="mt-2 text-xs leading-5 text-zinc-500">Project metadata and settings remain in localStorage for now. SQLite migration is planned for a later phase.</p>
         </div>
       </div>
     </div>
@@ -220,10 +220,8 @@ export function SettingsPage() {
 function Field({ label, htmlFor, children }: { label: string; htmlFor: string; children: ReactNode }) {
   return (
     <div>
-      <label htmlFor={htmlFor} className="mb-2 block text-xs font-medium text-slate-400">{label}</label>
+      <label htmlFor={htmlFor} className="mb-2 block text-xs font-medium text-zinc-400">{label}</label>
       {children}
     </div>
   )
 }
-
-const inputClass = 'h-10 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 text-sm text-slate-200 outline-none transition placeholder:text-slate-600 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/15'

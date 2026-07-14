@@ -95,8 +95,8 @@ export function ProjectOverviewPage() {
                 return (
                   <div key={category}>
                     <div className="mb-2 flex justify-between gap-3 text-xs">
-                      <span className="text-slate-300">{categoryLabels[category]}</span>
-                      <span className="text-slate-400">{counts.covered}/{counts.applicable} · {value}%</span>
+                      <span className="text-zinc-300">{categoryLabels[category]}</span>
+                      <span className="text-zinc-400">{counts.covered}/{counts.applicable} · {value}%</span>
                     </div>
                     <ProgressBar value={value} tone={value < 55 ? 'amber' : 'cyan'} />
                   </div>
@@ -112,16 +112,16 @@ export function ProjectOverviewPage() {
           ) : missingControls.length === 0 ? (
             <div className="p-5"><EmptyState icon={ClipboardCheck} title="No control gaps" description="All covered controls have linked evidence and no controls are marked as gaps." /></div>
           ) : (
-            <div className="divide-y divide-slate-800">
+            <div className="divide-y divide-zinc-800">
               {missingControls.map((control) => {
                 const hasNoEvidence = control.status === 'covered' && control.linkedEvidenceIds.length === 0
                 return (
                   <div key={control.id} className="px-5 py-4">
                     <div className="flex items-center justify-between gap-3">
-                      <p className="text-sm text-slate-200">{control.name}</p>
+                      <p className="text-sm text-zinc-200">{control.name}</p>
                       <Badge tone={hasNoEvidence ? 'amber' : 'red'}>{hasNoEvidence ? 'No linked evidence' : 'Gap'}</Badge>
                     </div>
-                    <p className="mt-1 text-xs text-slate-500">{categoryLabels[control.category]}{control.owner ? ` · ${control.owner}` : ''}</p>
+                    <p className="mt-1 text-xs text-zinc-500">{categoryLabels[control.category]}{control.owner ? ` · ${control.owner}` : ''}</p>
                   </div>
                 )
               })}
@@ -136,12 +136,12 @@ export function ProjectOverviewPage() {
           {recentEvidence.length === 0 ? (
             <div className="p-5"><EmptyState icon={Files} title="No evidence yet" description="Add evidence to populate the recent activity list." /></div>
           ) : (
-            <div className="divide-y divide-slate-800">
+            <div className="divide-y divide-zinc-800">
               {recentEvidence.map((item) => (
                 <div key={item.id} className="flex items-center gap-3 px-5 py-3.5">
                   <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-slate-200">{item.title}</p>
-                    <p className="mt-1 text-xs text-slate-500">{categoryLabels[item.category]} · Updated {formatDate(item.updatedAt || item.createdAt)}</p>
+                    <p className="truncate text-sm font-medium text-zinc-200">{item.title}</p>
+                    <p className="mt-1 text-xs text-zinc-500">{categoryLabels[item.category]} · Updated {formatDate(item.updatedAt || item.createdAt)}</p>
                   </div>
                   <Badge tone={evidenceTone[item.status]}>{statusLabels[item.status]}</Badge>
                 </div>
@@ -158,13 +158,13 @@ export function ProjectOverviewPage() {
           ) : (
             <div className="space-y-3 p-4">
               {priorityGaps.map((risk) => (
-                <div key={risk.id} className="rounded-lg border border-slate-800 bg-slate-950/40 p-3">
+                <div key={risk.id} className="rounded-lg border border-zinc-800 bg-zinc-950/40 p-3">
                   <div className="flex justify-between gap-3">
                     <Badge tone={riskTone[risk.severity]}>{risk.severity}</Badge>
                     <Badge tone={risk.status === 'open' ? 'red' : 'amber'}>{risk.status.replace('_', ' ')}</Badge>
                   </div>
-                  <p className="mt-2 text-sm text-slate-200">{risk.title}</p>
-                  <p className="mt-1 text-xs leading-5 text-slate-500">{risk.recommendation ?? risk.description}</p>
+                  <p className="mt-2 text-sm text-zinc-200">{risk.title}</p>
+                  <p className="mt-1 text-xs leading-5 text-zinc-500">{risk.recommendation ?? risk.description}</p>
                 </div>
               ))}
             </div>
@@ -176,5 +176,5 @@ export function ProjectOverviewPage() {
 }
 
 function SectionTitle({ title, detail }: { title: string; detail: string }) {
-  return <div className="border-b border-slate-800 px-5 py-4"><h2 className="font-semibold text-slate-100">{title}</h2><p className="mt-1 text-xs text-slate-500">{detail}</p></div>
+  return <div className="border-b border-zinc-800 px-5 py-4"><h2 className="font-semibold text-zinc-100">{title}</h2><p className="mt-1 text-xs text-zinc-500">{detail}</p></div>
 }

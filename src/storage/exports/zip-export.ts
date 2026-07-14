@@ -8,6 +8,7 @@ import {
   buildRisksCsv,
 } from './csv-export'
 import { buildMarkdownReport } from './markdown-report'
+import { buildPdfReport } from './pdf-export'
 import { EVIDENCE_CATEGORY_FOLDERS } from '../files/file-types'
 import { readEvidenceFileBytes } from '../files/evidence-file-store'
 import { saveExportBlob } from './download-export'
@@ -39,15 +40,20 @@ export async function buildEvidencePackZip({
   includeEvidenceFiles = true,
 }: ZipExportInput): Promise<ZipExportResult> {
   const zip = new JSZip()
-  const report = buildMarkdownReport({
+  const generatedAt = new Date()
+  const reportInput = {
     project,
     evidenceItems,
     controls,
     risks,
     stats,
     settings,
-  })
+    generatedAt,
+  }
+  const report = buildMarkdownReport(reportInput)
+  const pdf = await buildPdfReport(reportInput)
 
+  zip.file('report.pdf', pdf)
   zip.file('report.md', report)
   zip.file('evidence-index.csv', buildEvidenceCsv(evidenceItems, controls))
   zip.file('controls.csv', buildControlsCsv(controls))

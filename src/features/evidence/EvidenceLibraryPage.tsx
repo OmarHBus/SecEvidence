@@ -1,7 +1,26 @@
 import { useEffect, useMemo, useRef, useState, type FormEvent, type ReactNode } from 'react'
-import { ExternalLink, FilePlus2, FileSearch, Pencil, Search, Trash2, Upload, X } from 'lucide-react'
+import { ExternalLink, FilePlus2, FileSearch, Pencil, Search, Trash2, Upload } from 'lucide-react'
 import { useAppData } from '../../app/state/useAppData'
-import { Badge, Button, Card, DataTable, EmptyState, type Column } from '../../shared/components'
+import {
+  Badge,
+  Button,
+  Card,
+  DataTable,
+  Dialog,
+  DialogBody,
+  DialogDetail,
+  dialogCheckboxGridClass,
+  dialogCheckboxLabelClass,
+  dialogEmptyHintClass,
+  dialogInsetPanelClass,
+  dialogLegendClass,
+  EmptyState,
+  ActionGroup,
+  IconButton,
+  FormField,
+  inputClass,
+  type Column,
+} from '../../shared/components'
 import type { Control, EvidenceCategory, EvidenceItem, EvidenceStatus } from '../../shared/types'
 import { categoryLabels, formatDate, statusLabels } from '../../shared/utils/formatters'
 import { EVIDENCE_CATEGORY_FOLDERS } from '../../storage/files/file-types'
@@ -159,62 +178,87 @@ export function EvidenceLibraryPage() {
   const columns: Column<EvidenceItem>[] = [
     {
       key: 'title',
-      header: 'Title',
+      header: 'Evidence',
+      width: '32%',
       render: (item) => (
-        <div className="min-w-44">
-          <p className="font-medium text-slate-200">{item.title}</p>
-          {item.description ? <p className="mt-1 max-w-64 text-xs text-slate-500">{item.description}</p> : null}
+        <div className="min-w-0">
+          <p className="truncate font-medium text-zinc-100" title={item.title}>{item.title}</p>
+          {item.description ? (
+            <p className="mt-0.5 truncate text-xs text-zinc-500" title={item.description}>{item.description}</p>
+          ) : null}
+          {item.fileName ? (
+            <p className="mt-1 truncate text-[11px] text-zinc-600" title={item.fileName}>
+              {[item.fileName, item.fileType, item.fileSize !== undefined ? `${item.fileSize.toLocaleString()} B` : undefined].filter(Boolean).join(' · ')}
+            </p>
+          ) : null}
+          {item.notes ? (
+            <p className="mt-0.5 truncate text-[11px] italic text-zinc-600" title={item.notes}>{item.notes}</p>
+          ) : null}
         </div>
       ),
     },
-    { key: 'category', header: 'Category', render: (item) => <span className="whitespace-nowrap text-slate-400">{categoryLabels[item.category]}</span> },
-    { key: 'control', header: 'Linked control', render: (item) => <span className="block min-w-44 max-w-64 text-slate-300">{item.linkedControlIds.map((id) => controlNames.get(id) ?? id).join(', ') || '—'}</span> },
-    { key: 'status', header: 'Status', render: (item) => <Badge tone={toneByStatus[item.status]}>{statusLabels[item.status]}</Badge> },
-    { key: 'owner', header: 'Owner', render: (item) => <span className="whitespace-nowrap text-slate-400">{item.owner ?? '—'}</span> },
-    { key: 'date', header: 'Date', render: (item) => <span className="whitespace-nowrap text-slate-500">{formatDate(item.evidenceDate)}</span> },
     {
-      key: 'file',
-      header: 'File',
+      key: 'category',
+      header: 'Category',
+      width: '14%',
       render: (item) => (
-        <div className="max-w-48 text-xs text-slate-400">
-          <p className="truncate" title={item.fileName}>{item.fileName ?? '—'}</p>
-          {item.fileType || item.fileSize !== undefined
-            ? <p className="mt-1 text-slate-600">{[item.fileType, item.fileSize !== undefined ? `${item.fileSize.toLocaleString()} bytes` : undefined].filter(Boolean).join(' · ')}</p>
-            : null}
+        <span className="block truncate text-xs text-zinc-400" title={categoryLabels[item.category]}>
+          {categoryLabels[item.category]}
+        </span>
+      ),
+    },
+    {
+      key: 'control',
+      header: 'Control',
+      width: '18%',
+      render: (item) => {
+        const linked = item.linkedControlIds.map((id) => controlNames.get(id) ?? id).join(', ') || '—'
+        return <span className="block truncate text-xs text-zinc-400" title={linked}>{linked}</span>
+      },
+    },
+    {
+      key: 'status',
+      header: 'Status',
+      width: '12%',
+      render: (item) => <Badge tone={toneByStatus[item.status]}>{statusLabels[item.status]}</Badge>,
+    },
+    {
+      key: 'meta',
+      header: 'Owner / date',
+      width: '14%',
+      render: (item) => (
+        <div className="min-w-0 text-xs">
+          <p className="truncate text-zinc-400" title={item.owner ?? undefined}>{item.owner ?? '—'}</p>
+          <p className="mt-0.5 text-zinc-600">{formatDate(item.evidenceDate)}</p>
         </div>
       ),
     },
-    { key: 'notes', header: 'Notes', render: (item) => <span className="block min-w-48 max-w-72 text-xs leading-5 text-slate-500">{item.notes ?? '—'}</span> },
     {
       key: 'actions',
       header: 'Actions',
+      width: '96px',
+      align: 'right',
+      hideHeader: true,
       render: (item) => (
-        <div className="flex gap-1">
+        <ActionGroup>
           {item.localPath && desktopMode ? (
-            <Button
-              variant="ghost"
-              className="size-8 px-0"
+            <IconButton
+              icon={ExternalLink}
+              label={`Reveal ${item.title} file`}
+              variant="accent"
               onClick={() => void revealEvidenceFile(item.localPath!)}
-              aria-label={`Reveal ${item.title} file`}
-              title="Reveal file"
-            >
-              <ExternalLink size={15} aria-hidden="true" />
-            </Button>
+            />
           ) : null}
-          <Button variant="ghost" className="size-8 px-0" onClick={() => setDialogItem(item)} aria-label={`Edit ${item.title}`}>
-            <Pencil size={15} aria-hidden="true" />
-          </Button>
-          <Button
-            variant="ghost"
-            className="size-8 px-0 text-rose-300 hover:bg-rose-400/10 hover:text-rose-200"
+          <IconButton icon={Pencil} label={`Edit ${item.title}`} variant="edit" onClick={() => setDialogItem(item)} />
+          <IconButton
+            icon={Trash2}
+            label={`Delete ${item.title}`}
+            variant="danger"
             onClick={() => {
               if (window.confirm(`Delete evidence "${item.title}"?`)) deleteEvidence(item.id)
             }}
-            aria-label={`Delete ${item.title}`}
-          >
-            <Trash2 size={15} aria-hidden="true" />
-          </Button>
-        </div>
+          />
+        </ActionGroup>
       ),
     },
   ]
@@ -224,7 +268,7 @@ export function EvidenceLibraryPage() {
   return (
     <div className="space-y-4">
       <div className="flex flex-col justify-between gap-3 xl:flex-row xl:items-center">
-        <label className="flex h-9 min-w-56 flex-1 items-center gap-2 rounded-lg border border-slate-800 bg-slate-900 px-3 text-sm text-slate-500 focus-within:border-cyan-400 xl:max-w-md">
+        <label className="flex h-9 min-w-56 flex-1 items-center gap-2 rounded-lg border border-white/[0.07] bg-zinc-900/50 px-3 text-sm text-zinc-500 transition focus-within:border-teal-500/30 focus-within:ring-2 focus-within:ring-teal-500/10 xl:max-w-md">
           <Search size={15} aria-hidden="true" />
           <span className="sr-only">Search evidence</span>
           <input
@@ -232,14 +276,14 @@ export function EvidenceLibraryPage() {
             value={search}
             onChange={(event) => setSearch(event.target.value)}
             placeholder="Search title, owner, file, notes…"
-            className="min-w-0 flex-1 bg-transparent text-slate-200 outline-none placeholder:text-slate-600"
+            className="min-w-0 flex-1 bg-transparent text-zinc-200 outline-none placeholder:text-zinc-600"
           />
         </label>
         <Button icon={FilePlus2} disabled={!activeProjectId} onClick={() => setDialogItem(null)}>Add evidence</Button>
       </div>
 
       {!settings.localEvidencePackRootFolder.trim() ? (
-        <div className="rounded-lg border border-amber-400/20 bg-amber-400/10 px-4 py-3 text-sm text-amber-200">
+        <div className="rounded-lg border border-amber-500/20 bg-amber-500/10 px-4 py-3 text-sm text-amber-200">
           Set a local evidence pack folder in Settings to copy real files into an organized pack structure.
         </div>
       ) : null}
@@ -257,7 +301,7 @@ export function EvidenceLibraryPage() {
       </div>
 
       <Card className="overflow-hidden">
-        <div className="flex items-center justify-between border-b border-slate-800 px-4 py-3 text-xs text-slate-500">
+        <div className="flex items-center justify-between border-b border-white/[0.06] px-4 py-3 text-xs text-zinc-500">
           <span>{filteredItems.length} of {evidenceItems.length} items shown</span>
           <span>{activeProject?.localPackPath ? 'Pack folder ready' : 'Active project'}</span>
         </div>
@@ -299,7 +343,7 @@ function FilterSelect({
   children: ReactNode
 }) {
   return (
-    <label className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-slate-600">
+    <label className="flex items-center gap-2 text-xs font-medium uppercase tracking-wider text-zinc-600">
       {label}
       <select className={`${inputClass} h-9 w-auto min-w-44 py-0 normal-case tracking-normal`} value={value} onChange={(event) => onChange(event.target.value)}>
         {children}
@@ -341,12 +385,7 @@ function EvidenceDialog({
 
   useEffect(() => {
     titleRef.current?.focus()
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onClose()
-    }
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [onClose])
+  }, [])
 
   const updateField = <Key extends keyof EvidenceForm>(field: Key, value: EvidenceForm[Key]) => {
     setForm((current) => ({ ...current, [field]: value }))
@@ -389,156 +428,111 @@ function EvidenceDialog({
   const destinationFolder = EVIDENCE_CATEGORY_FOLDERS[form.category]
 
   return (
-    <div
-      className="fixed inset-0 z-50 grid place-items-center bg-slate-950/80 p-4 backdrop-blur-sm"
-      onMouseDown={(event) => {
-        if (event.target === event.currentTarget) onClose()
-      }}
+    <Dialog
+      titleId="evidence-dialog-title"
+      title={item ? 'Edit evidence' : 'Add evidence'}
+      description="Record evidence details, attach a real file, and link applicable controls."
+      onClose={onClose}
+      maxWidth="xl"
+      onSubmit={handleSubmit}
+      footer={(
+        <>
+          <Button variant="secondary" onClick={onClose}>Cancel</Button>
+          <Button type="submit">{item ? 'Save changes' : 'Add evidence'}</Button>
+        </>
+      )}
     >
-      <section role="dialog" aria-modal="true" aria-labelledby="evidence-dialog-title" className="max-h-[92vh] w-full max-w-4xl overflow-hidden rounded-xl border border-slate-700 bg-slate-900 shadow-2xl">
-        <div className="flex items-start justify-between border-b border-slate-800 px-5 py-4">
-          <div>
-            <h2 id="evidence-dialog-title" className="font-semibold text-slate-100">{item ? 'Edit evidence' : 'Add evidence'}</h2>
-            <p className="mt-1 text-xs text-slate-500">Record evidence details, attach a real file, and link applicable controls.</p>
-          </div>
-          <Button variant="ghost" className="size-9 px-0" onClick={onClose} aria-label="Close evidence dialog"><X size={18} aria-hidden="true" /></Button>
+      <DialogBody>
+        <div className="sm:col-span-2">
+          <FormField id="evidence-title" label="Title" required error={errors.title}>
+            <input ref={titleRef} id="evidence-title" className={inputClass} value={form.title} onChange={(event) => updateField('title', event.target.value)} aria-invalid={Boolean(errors.title)} aria-describedby={errors.title ? 'evidence-title-error' : undefined} />
+          </FormField>
         </div>
+        <div className="sm:col-span-2">
+          <FormField id="evidence-description" label="Description">
+            <textarea id="evidence-description" className={`${inputClass} min-h-20 resize-y py-2.5`} value={form.description} onChange={(event) => updateField('description', event.target.value)} />
+          </FormField>
+        </div>
+        <FormField id="evidence-category" label="Category">
+          <select id="evidence-category" className={inputClass} value={form.category} onChange={(event) => updateField('category', event.target.value as EvidenceCategory)}>
+            {categories.map((category) => <option key={category} value={category}>{categoryLabels[category]}</option>)}
+          </select>
+        </FormField>
+        <FormField id="evidence-status" label="Status">
+          <select id="evidence-status" className={inputClass} value={form.status} onChange={(event) => updateField('status', event.target.value as EvidenceStatus)}>
+            {statuses.map((status) => <option key={status} value={status}>{statusLabels[status]}</option>)}
+          </select>
+        </FormField>
+        <FormField id="evidence-owner" label="Owner">
+          <input id="evidence-owner" className={inputClass} value={form.owner} onChange={(event) => updateField('owner', event.target.value)} />
+        </FormField>
+        <FormField id="evidence-date" label="Evidence date">
+          <input id="evidence-date" type="date" className={inputClass} value={form.evidenceDate} onChange={(event) => updateField('evidenceDate', event.target.value)} />
+        </FormField>
 
-        <form onSubmit={handleSubmit} noValidate>
-          <div className="max-h-[calc(92vh-132px)] overflow-y-auto">
-            <div className="grid gap-5 p-5 sm:grid-cols-2">
-              <div className="sm:col-span-2">
-                <FormField id="evidence-title" label="Title" required error={errors.title}>
-                  <input ref={titleRef} id="evidence-title" className={inputClass} value={form.title} onChange={(event) => updateField('title', event.target.value)} aria-invalid={Boolean(errors.title)} aria-describedby={errors.title ? 'evidence-title-error' : undefined} />
-                </FormField>
-              </div>
-              <div className="sm:col-span-2">
-                <FormField id="evidence-description" label="Description">
-                  <textarea id="evidence-description" className={`${inputClass} min-h-20 resize-y py-2.5`} value={form.description} onChange={(event) => updateField('description', event.target.value)} />
-                </FormField>
-              </div>
-              <FormField id="evidence-category" label="Category">
-                <select id="evidence-category" className={inputClass} value={form.category} onChange={(event) => updateField('category', event.target.value as EvidenceCategory)}>
-                  {categories.map((category) => <option key={category} value={category}>{categoryLabels[category]}</option>)}
-                </select>
-              </FormField>
-              <FormField id="evidence-status" label="Status">
-                <select id="evidence-status" className={inputClass} value={form.status} onChange={(event) => updateField('status', event.target.value as EvidenceStatus)}>
-                  {statuses.map((status) => <option key={status} value={status}>{statusLabels[status]}</option>)}
-                </select>
-              </FormField>
-              <FormField id="evidence-owner" label="Owner">
-                <input id="evidence-owner" className={inputClass} value={form.owner} onChange={(event) => updateField('owner', event.target.value)} />
-              </FormField>
-              <FormField id="evidence-date" label="Evidence date">
-                <input id="evidence-date" type="date" className={inputClass} value={form.evidenceDate} onChange={(event) => updateField('evidenceDate', event.target.value)} />
-              </FormField>
-
-              <div className="sm:col-span-2 rounded-lg border border-slate-800 bg-slate-950/60 p-4">
-                <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
-                  <div>
-                    <p className="text-sm font-medium text-slate-200">Evidence file</p>
-                    <p className="mt-1 text-xs text-slate-500">
-                      {desktopMode
-                        ? 'Select a local file to copy into the project pack folder on save.'
-                        : 'Browser mode: file metadata only. Run the desktop app to copy real files.'}
-                    </p>
-                  </div>
-                  <Button type="button" variant="secondary" icon={Upload} onClick={() => void handleSelectFile()}>
-                    Select file
-                  </Button>
-                </div>
-                <div className="mt-4 grid gap-3 sm:grid-cols-2">
-                  <FileDetail label="File name" value={form.fileName || '—'} />
-                  <FileDetail label="File type" value={form.fileType || '—'} />
-                  <FileDetail label="File size" value={form.fileSize ? `${Number(form.fileSize).toLocaleString()} bytes` : '—'} />
-                  <FileDetail label="Destination category" value={`evidence/${destinationFolder}/`} />
-                  <div className="sm:col-span-2">
-                    <FileDetail label="Selected local path" value={(selectedFile?.sourcePath ?? form.localPath) || '—'} mono />
-                  </div>
-                </div>
-              </div>
-
-              {!desktopMode ? (
-                <>
-                  <FormField id="evidence-file-name" label="File name (manual)">
-                    <input id="evidence-file-name" className={inputClass} value={form.fileName} onChange={(event) => updateField('fileName', event.target.value)} />
-                  </FormField>
-                  <FormField id="evidence-file-type" label="File type (manual)">
-                    <input id="evidence-file-type" className={inputClass} value={form.fileType} onChange={(event) => updateField('fileType', event.target.value)} placeholder="e.g. PDF, CSV" />
-                  </FormField>
-                  <FormField id="evidence-file-size" label="File size (bytes)" error={errors.fileSize}>
-                    <input id="evidence-file-size" type="number" min="0" step="1" className={inputClass} value={form.fileSize} onChange={(event) => updateField('fileSize', event.target.value)} aria-invalid={Boolean(errors.fileSize)} aria-describedby={errors.fileSize ? 'evidence-file-size-error' : undefined} />
-                  </FormField>
-                  <FormField id="evidence-local-path" label="Local path (manual)">
-                    <input id="evidence-local-path" className={inputClass} value={form.localPath} onChange={(event) => updateField('localPath', event.target.value)} />
-                  </FormField>
-                </>
-              ) : null}
-
-              <div className="sm:col-span-2">
-                <FormField id="evidence-notes" label="Notes">
-                  <textarea id="evidence-notes" className={`${inputClass} min-h-20 resize-y py-2.5`} value={form.notes} onChange={(event) => updateField('notes', event.target.value)} />
-                </FormField>
-              </div>
-              <fieldset className="sm:col-span-2">
-                <legend className="mb-2 text-xs font-medium text-slate-400">Linked controls</legend>
-                {controls.length === 0 ? (
-                  <p className="rounded-lg border border-dashed border-slate-700 p-4 text-sm text-slate-500">This project has no controls to link.</p>
-                ) : (
-                  <div className="grid max-h-48 gap-2 overflow-y-auto rounded-lg border border-slate-700 bg-slate-950 p-3 sm:grid-cols-2">
-                    {controls.map((control) => (
-                      <label key={control.id} className="flex cursor-pointer items-start gap-2 rounded-md p-2 text-sm text-slate-300 hover:bg-slate-800">
-                        <input type="checkbox" className="mt-0.5 size-4 accent-cyan-400" checked={form.linkedControlIds.includes(control.id)} onChange={() => toggleControl(control.id)} />
-                        <span>{control.name}</span>
-                      </label>
-                    ))}
-                  </div>
-                )}
-              </fieldset>
+        <div className={`sm:col-span-2 p-4 ${dialogInsetPanelClass}`}>
+          <div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-center">
+            <div>
+              <p className="text-sm font-medium text-zinc-200">Evidence file</p>
+              <p className="mt-1 text-xs text-zinc-500">
+                {desktopMode
+                  ? 'Select a local file to copy into the project pack folder on save.'
+                  : 'Browser mode: file metadata only. Run the desktop app to copy real files.'}
+              </p>
+            </div>
+            <Button type="button" variant="secondary" icon={Upload} onClick={() => void handleSelectFile()}>
+              Select file
+            </Button>
+          </div>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <DialogDetail label="File name" value={form.fileName || '—'} />
+            <DialogDetail label="File type" value={form.fileType || '—'} />
+            <DialogDetail label="File size" value={form.fileSize ? `${Number(form.fileSize).toLocaleString()} bytes` : '—'} />
+            <DialogDetail label="Destination category" value={`evidence/${destinationFolder}/`} />
+            <div className="sm:col-span-2">
+              <DialogDetail label="Selected local path" value={(selectedFile?.sourcePath ?? form.localPath) || '—'} mono />
             </div>
           </div>
-          <div className="flex justify-end gap-3 border-t border-slate-800 px-5 py-4">
-            <Button variant="secondary" onClick={onClose}>Cancel</Button>
-            <Button type="submit">{item ? 'Save changes' : 'Add evidence'}</Button>
-          </div>
-        </form>
-      </section>
-    </div>
+        </div>
+
+        {!desktopMode ? (
+          <>
+            <FormField id="evidence-file-name" label="File name (manual)">
+              <input id="evidence-file-name" className={inputClass} value={form.fileName} onChange={(event) => updateField('fileName', event.target.value)} />
+            </FormField>
+            <FormField id="evidence-file-type" label="File type (manual)">
+              <input id="evidence-file-type" className={inputClass} value={form.fileType} onChange={(event) => updateField('fileType', event.target.value)} placeholder="e.g. PDF, CSV" />
+            </FormField>
+            <FormField id="evidence-file-size" label="File size (bytes)" error={errors.fileSize}>
+              <input id="evidence-file-size" type="number" min="0" step="1" className={inputClass} value={form.fileSize} onChange={(event) => updateField('fileSize', event.target.value)} aria-invalid={Boolean(errors.fileSize)} aria-describedby={errors.fileSize ? 'evidence-file-size-error' : undefined} />
+            </FormField>
+            <FormField id="evidence-local-path" label="Local path (manual)">
+              <input id="evidence-local-path" className={inputClass} value={form.localPath} onChange={(event) => updateField('localPath', event.target.value)} />
+            </FormField>
+          </>
+        ) : null}
+
+        <div className="sm:col-span-2">
+          <FormField id="evidence-notes" label="Notes">
+            <textarea id="evidence-notes" className={`${inputClass} min-h-20 resize-y py-2.5`} value={form.notes} onChange={(event) => updateField('notes', event.target.value)} />
+          </FormField>
+        </div>
+        <fieldset className="sm:col-span-2">
+          <legend className={dialogLegendClass}>Linked controls</legend>
+          {controls.length === 0 ? (
+            <p className={dialogEmptyHintClass}>This project has no controls to link.</p>
+          ) : (
+            <div className={dialogCheckboxGridClass}>
+              {controls.map((control) => (
+                <label key={control.id} className={dialogCheckboxLabelClass}>
+                  <input type="checkbox" className="mt-0.5 size-4 accent-teal-400" checked={form.linkedControlIds.includes(control.id)} onChange={() => toggleControl(control.id)} />
+                  <span>{control.name}</span>
+                </label>
+              ))}
+            </div>
+          )}
+        </fieldset>
+      </DialogBody>
+    </Dialog>
   )
 }
-
-function FileDetail({ label, value, mono = false }: { label: string; value: string; mono?: boolean }) {
-  return (
-    <div>
-      <p className="text-[11px] font-medium uppercase tracking-wider text-slate-600">{label}</p>
-      <p className={`mt-1 text-sm text-slate-300 ${mono ? 'break-all font-mono text-xs' : ''}`}>{value}</p>
-    </div>
-  )
-}
-
-function FormField({
-  id,
-  label,
-  required = false,
-  error,
-  children,
-}: {
-  id: string
-  label: string
-  required?: boolean
-  error?: string
-  children: ReactNode
-}) {
-  return (
-    <div>
-      <label htmlFor={id} className="mb-2 block text-xs font-medium text-slate-400">
-        {label}{required ? <span className="text-rose-400" aria-hidden="true"> *</span> : null}
-      </label>
-      {children}
-      {error ? <p id={`${id}-error`} className="mt-1.5 text-xs text-rose-300">{error}</p> : null}
-    </div>
-  )
-}
-
-const inputClass = 'h-10 w-full rounded-lg border border-slate-700 bg-slate-950 px-3 text-sm text-slate-200 outline-none transition placeholder:text-slate-600 focus:border-cyan-400 focus:ring-2 focus:ring-cyan-400/15'
